@@ -1,50 +1,57 @@
-/*NAMES
-    Florina Biletsiou AM: 2114033
-    Thomas Aggelopoulos AM: 2113043
-*/
+#define _POSIX_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
-#include "2114033_2113043_proj1.h"
-#include <unistd.h>
 #include <pthread.h>
-#include <string.h>
-#include <time.h>
-#include <sys/time.h> 
-#include <signal.h> 
+#include "2114033_2113043_proj1.h"
 
 
-pthread_mutex_t lock_available_telephonist;
-pthread_mutex_t lock_av_time_waiting;
-pthread_mutex_t lock_av_time_assisting;
-pthread_mutex_t lock_seats;
-pthread_mutex_t lock_balance;
+void* client_func(void *arg);
+
+unsigned int seed;
+int main(int argc, char *argv[] ){
+    int i;
+    //command line check
+    if (argc < 3 || argc >= 4)  
+    { 
+        printf("enter 3 arguments only eg.\"client.c number_of_customers rand_seed\"\n"); 
+        return 0; 
+    } 
+    N_cust = atoi(argv[1]);
+    seed = atoi(argv[2]);
+
+    //creation of client threads
+    pthread_t tid_clients[N_cust];
+    int err;
+    // Let us create the threads 
+    for (i = 0; i < N_cust; i++){
+        int *id = malloc(sizeof(*id));
+        *id = i+1;
+        err = pthread_create(&tid_clients[i], NULL, &client_func,(void *) id);
+        if(err !=0){
+            perror("pthread_create() error");
+            exit(1);
+       }
+    }
+    for(i = 0; i< N_cust; i++){
+        pthread_join(tid_clients[i],NULL);
+    }
 
 
-pthread_cond_t cond_available_telephonist=PTHREAD_COND_INITIALIZER;
-     
-clock_t start_assisting, end_assisting;
-clock_t end_waiting;
-double cpu_time_used(double s, double e);
 
-struct seats plan;
-
-int temp_seat_no = 0;
-
-double T_av_assisting = 0;
-double T_av_waiting = 0;
-
-void timer_handler (void)
-{
-  write(1,"\n\n[WAITING LINE] All our assistants are busy at the moment,we apologize. Please wait on the line\n\n",strlen("\n\n[WAITING LINE] All our assistants are busy at the moment,we apologize. Please wait on the line\n\n"));
+    return 0;
 }
 
 void* client_func(void *arg) {
+    int myid = *((int *) arg);
+    free(arg);
+    
+    printf("[C %d] Hey there\n",myid);
+    return NULL;
+    
+        /*
     //Thread created , time starts
     start_assisting = clock();
 
-    int i;
-    int myid = *((int *) arg);
-    free(arg);
 
     //Setting timer for the waiting line
     struct sigaction temp;
@@ -196,95 +203,5 @@ void* client_func(void *arg) {
     pthread_mutex_unlock(&lock_available_telephonist); // unlock available telephonists
     pthread_cond_signal(&cond_available_telephonist); // signaling condition waiting
     return NULL;
-
-}
-
-int main(int argc, char *argv[] ){
-
-    int i,j = 0;
-
-
-
-
-   //init of seats plan 
-    for (i=0; i<10; i++){
-        for(j=0; j<28; j++){
-            plan.seat_plan[i][j] = 0; // 0--> FREE 
-        }
-    }
-    plan.available_seats = N_seat;
-    plan.occupied_seats = 0;
-
-    //Mutex for available telephonists counter
-    if (pthread_mutex_init(&lock_available_telephonist, NULL) != 0)
-    {
-        printf("\n mutex init failed\n");
-        return 1;
-    }
-    
-    // Mutex for average time waiting 
-    if (pthread_mutex_init(&lock_av_time_waiting, NULL) != 0)
-    {
-        printf("\n mutex init failed\n");
-        return 1;
-    }
-
-    // Mutex for average time assisting 
-    if (pthread_mutex_init(&lock_av_time_assisting, NULL) != 0)
-    {
-        printf("\n mutex init failed\n");
-        return 1;
-    }
-
-    // Mutex for seats plan 
-    if (pthread_mutex_init(&lock_seats, NULL) != 0)
-    {
-        printf("\n mutex init failed\n");
-        return 1;
-    }
-
-    
-
-    //Printing Results
-    printf("~~THEATER PLAN~~\n");
-
-    for (i=0; i<10; i++){
-       for(j=0; j<28; j++){
-           printf("%d\t", plan.seat_plan[i][j]); 
-       }
-       printf("\n");
-    }
-    printf("Detailed list:\n");
-      for (i=0; i<10; i++){
-        for(j=0; j<28; j++){
-            printf("Seat %d : Client %d \n",(i*28)+j+1,plan.seat_plan[i][j]); 
-        }
-    }
-
-    printf("Balance : %d euro\n Transactions: %d\n",balance,N_transactions);
-    if(plan.occupied_seats == N_seat){
-        printf("Theater FULL \n");
-    }
-    else{
-        printf("Available %d/%d seats\n",plan.available_seats,N_seat);
-    }
-
-    printf("Average Time Waiting %f . \n",(double)T_av_waiting/(double)N_cust);
-    printf("Average Time Assisting %f . \n",(double)T_av_assisting/(double)N_cust);
-
-    //Destroying the mutexes
-    pthread_mutex_destroy(&lock_available_telephonist);
-    pthread_mutex_destroy(&lock_av_time_waiting);
-    pthread_mutex_destroy(&lock_av_time_assisting);
-    pthread_mutex_destroy(&lock_seats);
-    pthread_mutex_destroy(&lock_balance);
-    
-    //Destroying Condition variable
-    pthread_cond_destroy(&cond_available_telephonist); 
-
-    pthread_exit(0);
-}
-
-double cpu_time_used(double s, double e){
-    return ((double) (e - s)) / CLOCKS_PER_SEC;
+*/
 }
