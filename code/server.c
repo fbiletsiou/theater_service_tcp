@@ -2,71 +2,87 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <netdb.h> 
+#include <netinet/in.h> 
+#include <string.h> 
+#include <strings.h>
+#include <sys/socket.h> 
+#include <sys/types.h> 
+#include <fcntl.h> 
+#include <unistd.h>
+#define MAX 80 
+#define PORT 8080 
+#define SA struct sockaddr 
+
 #include "2114033_2113043_proj1.h"
 
 
-void* telephonist_func(void *arg);
-void* cashier_func(void *arg);
 
-unsigned int seed;
 int main(int argc, char *argv[] ){
+    int sockfd, connfd; 
+    socklen_t len;
+    struct sockaddr_in servaddr, cli;
     int i;
+    int available_teleph = N_tel;
+    int available_cashiers = N_cash;
+
+    unsigned int seed;
+    
     //command line check
     if (argc < 1 || argc >= 2)  
     { 
         printf("enter a single argument eg.\"server.c \"\n"); 
         return 0; 
     }
+    //======socket=====
+    // socket creation and verification 
+    sockfd = socket(AF_INET, SOCK_STREAM, 0); 
+    if (sockfd == -1) { 
+        printf("[-] Socket creation failed...\n"); 
+        exit(0); 
+    } 
+    else
+        printf("[+] Socket successfully created..\n"); 
+    bzero(&servaddr, sizeof(servaddr)); 
+  
+    // assign IP, PORT 
+    servaddr.sin_family = AF_INET; 
+    servaddr.sin_addr.s_addr = htonl(INADDR_ANY); 
+    servaddr.sin_port = htons(PORT); 
+  
+    // Binding newly created socket to given IP and verification 
+    if ((bind(sockfd, (SA*)&servaddr, sizeof(servaddr))) != 0) { 
+        printf("[-] Socket bind failed...\n"); 
+        exit(0); 
+    } 
+    else
+        printf("[+] Socket successfully binded..\n"); 
+  
+    // Now server is ready to listen and verification 
+    if ((listen(sockfd, 5)) != 0) { 
+        printf("[-] Listen failed...\n"); 
+        exit(0); 
+    } 
+    else
+        printf("[-] Server listening..\n"); 
+    len = sizeof(cli); 
+  
+    // Accept the data packet from client and verification 
+    connfd = accept(sockfd, (SA*)&cli, &len); 
+    if (connfd < 0) { 
+        printf("[-] Server acccept failed...\n"); 
+        exit(0); 
+    } 
+    else
+        printf("[+] Server acccept the client...\n"); 
+   
+  
+    // After chatting close the socket 
+    close(sockfd); 
 
-    //creation of telephonist threads
-    pthread_t tid_telephonists[N_tel];
-    int err;
-    // Let us create the threads 
-    for (i = 0; i < N_tel; i++){
-        int *id = malloc(sizeof(*id));
-        *id = i+1;
-        err = pthread_create(&tid_telephonists[i], NULL, &telephonist_func,(void *) id);
-        if(err !=0){
-            perror("pthread_create() error");
-            exit(1);
-       }
-    }
-    //creation of cashier threads
-    pthread_t tid_cashiers[N_cash];
-    // Let us create the threads 
-    for (i = 0; i < N_cash; i++){
-        int *id = malloc(sizeof(*id));
-        *id = i+1;
-        err = pthread_create(&tid_cashiers[i], NULL, &cashier_func,(void *) id);
-        if(err !=0){
-            perror("pthread_create() error");
-            exit(1);
-       }
-    }
 
-    for(i = 0; i< N_tel; i++){
-        pthread_join(tid_telephonists[i],NULL);
-    }
-    for(i = 0; i< N_cash; i++){
-        pthread_join(tid_cashiers[i],NULL);
-    }
-
+    //=================
+    
 
     return 0;
-}
-
-void* telephonist_func(void *arg) {
-    int myid = *((int *) arg);
-    free(arg);
-    
-    printf("[T %d] Hey there\n",myid);
-    return NULL;
-}
-
-void* cashier_func(void *arg) {
-    int myid = *((int *) arg);
-    free(arg);
-    
-    printf("[C %d] Hey there\n",myid);
-    return NULL;
 }
