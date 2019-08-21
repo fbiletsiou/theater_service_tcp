@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <strings.h>
+#include <string.h>
 #include <sys/socket.h> 
 #include <netdb.h> 
 #include <netinet/in.h>
@@ -64,6 +65,7 @@ int main(int argc, char *argv[] ){
 
 void* client_func(void *arg) {
     int sockfd, connfd; 
+    char message[256];
     struct sockaddr_in servaddr, cli; 
   
     int myid = *((int *) arg);
@@ -95,7 +97,12 @@ void* client_func(void *arg) {
         printf("[+] Connected to the server..\n"); 
     //===================   
 
-
+    // requesting for a telephonist
+    sprintf(message,"%d-Tel-request",myid);
+    if(send(sockfd, message,strlen(message),0) < 0){
+        printf("[-] Send failed \n");
+        return 1;
+    }
     
     // close the socket 
     close(sockfd); 
